@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<!--[if lt IE 8 ]><html class="no-js ie ie7" lang="en"> <![endif]-->
+<!--[if IE 8 ]><html class="no-js ie ie8" lang="en"> <![endif]-->
+<!--[if (gte IE 8)|!(IE)]><!--><html class="no-js" lang="en"> <!--<![endif]-->
+<head>
+   <meta charset="utf-8">
+	<title>FCSB</title>
+	<meta name="description" content="">
+	<meta name="author" content="">
+
+
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+
+   <link rel="stylesheet" href="css/default.css">
+	<link rel="stylesheet" href="css/layout.css">
+   <link rel="stylesheet" href="css/media-queries.css">
+   <link rel="stylesheet" href="css/magnific-popup.css">
+
+
+	<script src="js/modernizr.js"></script>
+
+
+	<link rel="shortcut icon" href="images/logo.png" >
+
+</head>
+
+<body>
+
+
+<style>
+  #snowflakeContainer {
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    display: none;
+  }
+
+  .snowflake {
+    position: fixed;
+    background-color: #CCC;
+    user-select: none;
+    z-index: 1000;
+    pointer-events: none;
+    border-radius: 50%;
+    width: 10px;
+    height: 10px;
+  }
+</style>
+
+<div id="snowflakeContainer">
+  <span class="snowflake"></span>
+</div>
+
+<script>
+
+  var snowflakes = [];
+
+
+  var browserWidth;
+  var browserHeight;
+
+
+  var numberOfSnowflakes = 50;
+
+
+  var resetPosition = false;
+
+  // Handle accessibility
+  var enableAnimations = false;
+  var reduceMotionQuery = matchMedia("(prefers-reduced-motion)");
+
+
+  function setAccessibilityState() {
+    if (reduceMotionQuery.matches) {
+      enableAnimations = false;
+    } else { 
+      enableAnimations = true;
+    }
+  }
+  setAccessibilityState();
+
+  reduceMotionQuery.addListener(setAccessibilityState);
+
+  function setup() {
+    if (enableAnimations) {
+      window.addEventListener("DOMContentLoaded", generateSnowflakes, false);
+      window.addEventListener("resize", setResetFlag, false);
+    }
+  }
+  setup();
+
+ 
+  function Snowflake(element, speed, xPos, yPos) {
+    // set initial snowflake properties
+    this.element = element;
+    this.speed = speed;
+    this.xPos = xPos;
+    this.yPos = yPos;
+    this.scale = 1;
+
+    // declare variables used for snowflake's motion
+    this.counter = 0;
+    this.sign = Math.random() < 0.5 ? 1 : -1;
+
+    // setting an initial opacity and size for our snowflake
+    this.element.style.opacity = (.1 + Math.random()) / 3;
+  }
+
+  //
+  // The function responsible for actually moving our snowflake
+  //
+  Snowflake.prototype.update = function () {
+    // using some trigonometry to determine our x and y position
+    this.counter += this.speed / 5000;
+    this.xPos += this.sign * this.speed * Math.cos(this.counter) / 40;
+    this.yPos += Math.sin(this.counter) / 40 + this.speed / 30;
+    this.scale = .5 + Math.abs(10 * Math.cos(this.counter) / 20);
+
+    // setting our snowflake's position
+    setTransform(Math.round(this.xPos), Math.round(this.yPos), this.scale, this.element);
+
+    // if snowflake goes below the browser window, move it back to the top
+    if (this.yPos > browserHeight) {
+      this.yPos = -50;
+    }
+  }
+
+  //
+  // A performant way to set your snowflake's position and size
+  //
+  function setTransform(xPos, yPos, scale, el) {
+    el.style.transform = `translate3d(${xPos}px, ${yPos}px, 0) scale(${scale}, ${scale})`;
+  }
+
+  //
+  // The function responsible for creating the snowflake
+  //
+  function generateSnowflakes() {
+
+    // get our snowflake element from the DOM and store it
+    var originalSnowflake = document.querySelector(".snowflake");
+
+    // access our snowflake element's parent container
+    var snowflakeContainer = originalSnowflake.parentNode;
+    snowflakeContainer.style.display = "block";
+
+    // get our browser's size
+    browserWidth = document.documentElement.clientWidth;
+    browserHeight = document.documentElement.clientHeight;
+
+    // create each individual snowflake
+    for (var i = 0; i < numberOfSnowflakes; i++) {
+
+      // clone our original snowflake and add it to snowflakeContainer
+      var snowflakeClone = originalSnowflake.cloneNode(true);
+      snowflakeContainer.appendChild(snowflakeClone);
+
+      // set our snowflake's initial position and related properties
+      var initialXPos = getPosition(50, browserWidth);
+      var initialYPos = getPosition(50, browserHeight);
+      var speed = 5 + Math.random() * 40;
+
+      // create our Snowflake object
+      var snowflakeObject = new Snowflake(snowflakeClone,
+        speed,
+        initialXPos,
+        initialYPos);
+      snowflakes.push(snowflakeObject);
+    }
+
+    // remove the original snowflake because we no longer need it visible
+    snowflakeContainer.removeChild(originalSnowflake);
+
+    moveSnowflakes();
+  }
+
+  //
+  // Responsible for moving each snowflake by calling its update function
+  //
+  function moveSnowflakes() {
+
+    if (enableAnimations) {
+      for (var i = 0; i < snowflakes.length; i++) {
+        var snowflake = snowflakes[i];
+        snowflake.update();
+      }      
+    }
+
+    // Reset the position of all the snowflakes to a new value
+    if (resetPosition) {
+      browserWidth = document.documentElement.clientWidth;
+      browserHeight = document.documentElement.clientHeight;
+
+      for (var i = 0; i < snowflakes.length; i++) {
+        var snowflake = snowflakes[i];
+
+        snowflake.xPos = getPosition(50, browserWidth);
+        snowflake.yPos = getPosition(50, browserHeight);
+      }
+
+      resetPosition = false;
+    }
+
+    requestAnimationFrame(moveSnowflakes);
+  }
+
+  //
+  // This function returns a number between (maximum - offset) and (maximum + offset)
+  //
+  function getPosition(offset, size) {
+    return Math.round(-1 * offset + Math.random() * (size + 2 * offset));
+  }
+
+  //
+  // Trigger a reset of all the snowflakes' positions
+  //
+  function setResetFlag(e) {
+    resetPosition = true;
+  }
+</script>
+
+
+   <!-- Header
+   ================================================== -->
+   <header id="home">
+
+      <nav id="nav-wrap">Design creat de Dumitru Andrei Cristian
+
+         <a class="mobile-btn" href="#nav-wrap" title="Show navigation">Show navigation</a>
+	      <a class="mobile-btn" href="#" title="Hide navigation">Hide navigation</a>
+
+         <ul id="nav" class="nav">
+            <li class="current"><a class="smoothscroll" href="#home">Inceput</a></li>
+	         <li><a class="smoothscroll" href="#resume">Clasament</a></li>
+			 <li><a class="smoothscroll" href="#stadion">Stadion</a></li>
+            <li><a class="smoothscroll" href="#portfolio">Lot</a></li>
+		    <li><a class="smoothscroll" href="#call-to-action">Istoric</a></li>
+            <li><a class="smoothscroll" href="#testimonials">Motivatie</a></li>
+            <li><a class="smoothscroll" href="#contact">Contactati-ne</a></li>
+         </ul> <!-- end #nav -->
+
+      </nav> <!-- end #nav-wrap -->
+
+      <div class="row banner">
+         <div class="banner-text">
+            <hr />
+         </div>
+      </div>
+      <p class="scrolldown">
+         <a class="smoothscroll" href="#contact"><i class="icon-down-circle"></i></a>
+      </p>
+
+   </header> <!-- Header End -->
+
+
+
+
+
+   <!-- Resume Section
+   ================================================== -->
+   <section id="resume">
+
+      <!-- Education
+      ----------------------------------------------- -->
+      <div class="row education">
+         <div class="three columns header-col">
+            <h1><span>Clasament</span></h1>
+         </div>
+         <div class="nine columns main-col">
+
+            <div class="row item">
+
+               <div class="twelve columns">
+
+               
+				  <iframe frameborder="0"  scrolling="no" width="565" height="518" src="https://www.fctables.com/romania/liga-i/iframe/?type=table&lang_id=2&country=178&template=112&team=194863&timezone=Europe/Bucharest&time=24&po=1&ma=1&wi=1&dr=1&los=1&gf=1&ga=1&gd=1&pts=1&ng=1&form=1&width=565&height=518&font=Helvetica&fs=15&lh=28&bg=FFFFFF&fc=333333&logo=1&tlink=1&ths=1&thb=1&thba=FFFFFF&thc=000000&bc=dddddd&hob=f5f5f5&hobc=ebe7e7&lc=333333&sh=1&hfb=1&hbc=3bafda&hfc=FFFFFF"></iframe><div style="text-align:center;"></div>
+           </h3>
+
+               </div>
+
+            </div> <!-- item end -->
+
+         </div> <!-- main-col end -->
+
+      </div> <!-- End Education -->
+
+
+      <!-- Work
+      ----------------------------------------------- -->
+      <div class="row work">
+         <div class="three columns header-col">
+            <h1><span>Etape</span></h1>
+			
+         </div>
+
+         <div class="nine columns main-col">
+
+            <div class="row item">
+
+               <div class="twelve columns">
+
+                 <iframe frameborder="0"  scrolling="no" width="520" height="200" src="https://www.fctables.com/teams/steaua-bucuresti-194863/iframe/?type=team-last-match&lang_id=2&country=178&template=112&team=194863&timezone=Europe/Bucharest&time=24&width=520&height=200&font=Verdana&fs=12&lh=22&bg=FFFFFF&fc=333333&logo=1&tlink=1&scfs=22&scfc=333333&scb=1&sclg=1&teamls=80&sh=1&hfb=1&hbc=3bafda&hfc=FFFFFF"></iframe><div style="text-align:center;"></div>
+
+               </div>
+
+            </div> <!-- item end -->
+
+            <div class="row item">
+
+               <div class="twelve columns">
+
+                <iframe frameborder="0"  scrolling="no" width="520" height="200" src="https://www.fctables.com/teams/steaua-bucuresti-194863/iframe/?type=team-next-match&lang_id=2&country=178&template=112&team=194863&timezone=Europe/Bucharest&time=24&width=520&height=200&font=Verdana&fs=12&lh=22&bg=FFFFFF&fc=333333&logo=1&tlink=1&scfs=22&scfc=333333&scb=1&sclg=1&teamls=80&sh=1&hfb=1&hbc=3bafda&hfc=FFFFFF"></iframe><div style="text-align:center;"></div>
+               </div>
+
+            </div> <!-- item end -->
+         </div> <!-- main-col end -->
+
+      </div> <!-- End Work -->
+
+	  <!-- Call-To-Action Section
+   ================================================== -->
+   <section id="stadion">
+
+      <div class="row">
+
+    <h1> STADION </h1>
+	<div class="flexslider">
+
+                  <ul class="slides">
+
+                     <li>
+                        <blockquote>
+                       <img src="images/stadion.jpg" alt="FCSB">
+                        </blockquote>
+                     </li> <!-- slide ends -->
+
+                     <li>
+                        <blockquote>
+                      <img src="images/arena.jpg" alt="FCSB">
+                        </blockquote>
+                     </li> <!-- slide ends -->
+					 
+					 <li>
+                        <blockquote>
+                      <img src="images/arena1.jpg" alt="FCSB">
+                        </blockquote>
+                     </li> <!-- slide ends -->
+					 
+					 <li>
+                        <blockquote>
+                      <img src="images/arena2.jpg" alt="FCSB">
+                        </blockquote>
+                     </li> <!-- slide ends -->
+
+                  </ul>
+
+               </div> <!-- div.flexslider ends -->
+         <div class="three columns action">
+   <a href="stadion.html">Vezi mai mult...</a> 
+
+         </div>
+
+      </div>
+
+   </section> <!-- Call-To-Action Section End-->
+	  
+
+   <!-- Portfolio Section
+   ================================================== -->
+   <section id="portfolio">
+
+      <div class="row">
+
+         <div class="twelve columns collapsed">
+
+            <h1>Lot-ul echipei</h1>
+
+            <!-- portfolio-wrapper -->
+            <div id="portfolio-wrapper" class="bgrid-quarters s-bgrid-thirds cf">
+
+          	   <div class="columns portfolio-item">
+                  <div class="item-wrap">
+
+                     <a href="#modal-01" title="">
+                        <img alt="" src="images/portfolio/coffee.jpg">
+                        <div class="overlay">
+                           <div class="portfolio-item-meta">
+          					      <h5>Mihai Pintili</h5>
+                              <p>5</p>
+          					   </div>
+                        </div>
+                        <div class="link-icon"><i class="icon-plus"></i></div>
+                     </a>
+
+                  </div>
+          		</div> <!-- item end -->
+
+               <div class="columns portfolio-item">
+                  <div class="item-wrap">
+
+                     <a href="#modal-02" title="">
+                        <img alt="" src="images/portfolio/console.jpg">
+                        <div class="overlay">
+                           <div class="portfolio-item-meta">
+          					      <h5>Dragos Nedelcu</h5>
+                              <p>6</p>
+          					   </div>
+                        </div>
+                        <div class="link-icon"><i class="icon-plus"></i></div>
+                     </a>
+
+                  </div>
+          		</div> <!-- item end -->
+
+               <div class="columns portfolio-item">
+                  <div class="item-wrap">
+
+                     <a href="#modal-03" title="">
+                        <img alt="" src="images/portfolio/judah.jpg">
+                        <div class="overlay">
+                           <div class="portfolio-item-meta">
+          					      <h5>Florin Tanase</h5>
+                              <p>10</p>
+          					   </div>
+                        </div>
+                        <div class="link-icon"><i class="icon-plus"></i></div>
+                     </a>
+
+                  </div>
+          		</div> <!-- item end -->
+
+               <div class="columns portfolio-item">
+                  <div class="item-wrap">
+
+                     <a href="#modal-04" title="">
+                        <img alt="" src="images/portfolio/into-the-light.jpg">
+                        <div class="overlay">
+                           <div class="portfolio-item-meta">
+          					      <h5>Harlem Gnohere</h5>
+                              <p>9</p>
+          					   </div>
+                        </div>
+                        <div class="link-icon"><i class="icon-plus"></i></div>
+                     </a>
+
+                  </div>
+          		</div> <!-- item end -->
+
+               <div class="columns portfolio-item">
+                  <div class="item-wrap">
+
+                     <a href="#modal-05" title="">
+                        <img alt="" src="images/portfolio/farmerboy.jpg">
+                        <div class="overlay">
+                           <div class="portfolio-item-meta">
+          					      <h5>Florinel Coman</h5>
+                              <p>7</p>
+          					   </div>
+                        </div>
+                        <div class="link-icon"><i class="icon-plus"></i></div>
+                     </a>
+
+                  </div>
+          		</div> <!-- item end -->
+
+               <div class="columns portfolio-item">
+                  <div class="item-wrap">
+
+                     <a href="#modal-06" title="">
+                        <img alt="" src="images/portfolio/girl.jpg">
+                        <div class="overlay">
+                           <div class="portfolio-item-meta">
+          					      <h5>Lucian Filip</h5>
+                              <p>8</p>
+          					   </div>
+                        </div>
+                        <div class="link-icon"><i class="icon-plus"></i></div>
+                     </a>
+
+                  </div>
+          		</div> <!-- item end -->
+
+               <div class="columns portfolio-item">
+                  <div class="item-wrap">
+
+                     <a href="#modal-07" title="">
+                        <img alt="" src="images/portfolio/origami.jpg">
+                        <div class="overlay">
+                           <div class="portfolio-item-meta">
+          					      <h5>Olimpiu Morutan</h5>
+                              <p>11</p>
+          					   </div>
+                        </div>
+                        <div class="link-icon"><i class="icon-plus"></i></div>
+                     </a>
+
+                  </div>
+          		</div> <!-- item end -->
+
+               <div class="columns portfolio-item">
+                  <div class="item-wrap">
+
+                     <a href="#modal-08" title="">
+                        <img alt="" src="images/portfolio/retrocam.jpg">
+                        <div class="overlay">
+                           <div class="portfolio-item-meta">
+          					      <h5>Marko Momcilovic</h5>
+                              <p>15</p>
+          					   </div>
+                        </div>
+                        <div class="link-icon"><i class="icon-plus"></i></div>
+                     </a>
+
+                  </div>
+          		</div>  <!-- item end -->
+				 <div class="columns portfolio-item">
+                  <div class="item-wrap">
+
+                     <a href="#modal-09" title="">
+                        <img alt="" src="images/portfolio/girl1.png">
+                        <div class="overlay">
+                           <div class="portfolio-item-meta">
+          					      <h5>Ioan Hora</h5>
+                              <p>21</p>
+          					   </div>
+                        </div>
+                        <div class="link-icon"><i class="icon-plus"></i></div>
+                     </a>
+
+                  </div>
+          		</div> <!-- item end -->
+				
+				 <div class="columns portfolio-item">
+                  <div class="item-wrap">
+
+                     <a href="#modal-10" title="">
+                        <img alt="" src="images/portfolio/girl2.png">
+                        <div class="overlay">
+                           <div class="portfolio-item-meta">
+          					      <h5>Bogdan Planic</h5>
+                              <p>16</p>
+          					   </div>
+                        </div>
+                        <div class="link-icon"><i class="icon-plus"></i></div>
+                     </a>
+
+                  </div>
+          		</div> <!-- item end -->
+				
+				 <div class="columns portfolio-item">
+                  <div class="item-wrap">
+
+                     <a href="#modal-11" title="">
+                        <img alt="" src="images/portfolio/girl3.png">
+                        <div class="overlay">
+                           <div class="portfolio-item-meta">
+          					      <h5>Razvan Duncan</h5>
+                              <p>12</p>
+          					   </div>
+                        </div>
+                        <div class="link-icon"><i class="icon-plus"></i></div>
+                     </a>
+
+                  </div>
+          		</div> <!-- item end -->
+				
+				 <div class="columns portfolio-item">
+                  <div class="item-wrap">
+
+                     <a href="#modal-12" title="">
+                        <img alt="" src="images/portfolio/girl4.png">
+                        <div class="overlay">
+                           <div class="portfolio-item-meta">
+          					      <h5>Ovidiu Popescu</h5>
+                              <p>23</p>
+          					   </div>
+                        </div>
+                        <div class="link-icon"><i class="icon-plus"></i></div>
+                     </a>
+
+                  </div>
+          		</div> <!-- item end -->
+				
+				 <div class="columns portfolio-item">
+                  <div class="item-wrap">
+
+                     <a href="#modal-13" title="">
+                        <img alt="" src="images/portfolio/girl5.png">
+                        <div class="overlay">
+                           <div class="portfolio-item-meta">
+          					      <h5>Adrian Stoian</h5>
+                              <p>27</p>
+          					   </div>
+                        </div>
+                        <div class="link-icon"><i class="icon-plus"></i></div>
+                     </a>
+
+                  </div>
+          		</div> <!-- item end -->
+				
+				 <div class="columns portfolio-item">
+                  <div class="item-wrap">
+
+                     <a href="#modal-14" title="">
+                        <img alt="" src="images/portfolio/girl6.png">
+                        <div class="overlay">
+                           <div class="portfolio-item-meta">
+          					      <h5>Denis Man</h5>
+                              <p>98</p>
+          					   </div>
+                        </div>
+                        <div class="link-icon"><i class="icon-plus"></i></div>
+                     </a>
+
+                  </div>
+          		</div> <!-- item end -->
+				
+				 <div class="columns portfolio-item">
+                  <div class="item-wrap">
+
+                     <a href="#modal-15" title="">
+                        <img alt="" src="images/portfolio/girl7.png">
+                        <div class="overlay">
+                           <div class="portfolio-item-meta">
+          					      <h5>Mihai Roman</h5>
+                              <p>28</p>
+          					   </div>
+                        </div>
+                        <div class="link-icon"><i class="icon-plus"></i></div>
+                     </a>
+
+                  </div>
+          		</div> <!-- item end -->
+				
+				 <div class="columns portfolio-item">
+                  <div class="item-wrap">
+
+                     <a href="#modal-16" title="">
+                        <img alt="" src="images/portfolio/girl8.png">
+                        <div class="overlay">
+                           <div class="portfolio-item-meta">
+          					      <h5>Cristian Balgradean</h5>
+                              <p>34</p>
+          					   </div>
+                        </div>
+                        <div class="link-icon"><i class="icon-plus"></i></div>
+                     </a>
+
+                  </div>
+          		</div> <!-- item end -->
+				
+				<div class="columns portfolio-item">
+                  <div class="item-wrap">
+
+                     <a href="#modal-17" title="">
+                        <img alt="" src="images/portfolio/girl9.png">
+                        <div class="overlay">
+                           <div class="portfolio-item-meta">
+          					      <h5>Florentin Matei</h5>
+                              <p>70</p>
+          					   </div>
+                        </div>
+                        <div class="link-icon"><i class="icon-plus"></i></div>
+                     </a>
+
+                  </div>
+          		</div> <!-- item end -->
+				
+				<div class="columns portfolio-item">
+                  <div class="item-wrap">
+
+                     <a href="#modal-18" title="">
+                        <img alt="" src="images/portfolio/girl10.png">
+                        <div class="overlay">
+                           <div class="portfolio-item-meta">
+          					      <h5>Alexandru Stan</h5>
+                              <p>77</p>
+          					   </div>
+                        </div>
+                        <div class="link-icon"><i class="icon-plus"></i></div>
+                     </a>
+
+                  </div>
+          		</div> <!-- item end -->
+				
+				<div class="columns portfolio-item">
+                  <div class="item-wrap">
+
+                     <a href="#modal-19" title="">
+                        <img alt="" src="images/portfolio/girl11.png">
+                        <div class="overlay">
+                           <div class="portfolio-item-meta">
+          					      <h5>Filipe Teixeira</h5>
+                              <p>80</p>
+          					   </div>
+                        </div>
+                        <div class="link-icon"><i class="icon-plus"></i></div>
+                     </a>
+
+                  </div>
+          		</div> <!-- item end -->
+				
+				<div class="columns portfolio-item">
+                  <div class="item-wrap">
+
+                     <a href="#modal-20" title="">
+                        <img alt="" src="images/portfolio/girl12.png">
+                        <div class="overlay">
+                           <div class="portfolio-item-meta">
+          					      <h5>Raul Rusescu</h5>
+                              <p>24</p>
+          					   </div>
+                        </div>
+                        <div class="link-icon"><i class="icon-plus"></i></div>
+                     </a>
+
+                  </div>
+          		</div> <!-- item end -->
+				
+
+            </div> <!-- portfolio-wrapper end -->
+
+         </div> <!-- twelve columns end -->
+
+
+         <!-- Modal Popup
+	      --------------------------------------------------------------- -->
+
+         <div id="modal-01" class="popup-modal mfp-hide">
+
+		      <img class="scale-with-grid" src="images/portfolio/modals/m-coffee.jpg" alt="" />
+
+		      <div class="description-box">
+			      <h4>5</h4>
+			      <p>Mihai Doru Pintilii este un mijlocas central nascut pe 9 noiembrie 1984 in Iasi, care a evoluat, de-a lungul carierei, pentru Auxerre Lugoj, Jiul Petrosani, International Pitesti si Pandurii Targu-Jiu. In vara lui 2012, fostul capitan de la Pandurii s-a transferat la Steaua, echipa din lotul careia a facut parte, pentru o scurta perioada, in 2007. Dupa doua sezoane incununate de succes in Ghencea, Pintilii a fost transferat la Al Hilal Riad in vara lui 2014, acolo unde l-a insotit pe Laurentiu Reghecampf. In returul sezonului trecut, jucatorul a fost imprumutat la Pandurii Targu-Jiu, iar in prima parte a actualei stagiuni a evoluat pentru Hapoel Tel-Aviv, de unde a fost transferat inapoi la Steaua. A castigat doua titluri si Super Cupa Romaniei cu echipa noastra, adunand 53 de meciuri si 5 goluri in Liga 1, 9 meciuri si un gol in UEFA Champions League, 13 meciuri in UEFA Europa League, 4 jocuri in Cupa Romaniei, precum si un meci si un gol marcat in Super Cupa Romaniei. In plus, Pintilii este international, acesta debutand la prima reprezentativa in 2011 si evoluand, pana in acest moment, in 20 partide, marcand un gol si calificandu-se la EURO 2016.
+</p>
+		      </div>
+
+            <div class="link-box">
+		         <a class="popup-modal-dismiss">Close</a>
+            </div>
+
+	      </div><!-- modal-01 End -->
+
+         <div id="modal-02" class="popup-modal mfp-hide">
+
+		      <img class="scale-with-grid" src="images/portfolio/modals/m-console.jpg" alt="" />
+
+		      <div class="description-box">
+			      <h4>6</h4>
+			      <p>Dragos Nedelcu este un jucator nascut pe 16 februarie 1997, la Constanta. Acesta este un produs 100% al Academiei de Fotbal "Gheorghe Hagi" si a debutat la FC Viitorul in 2017, adunand, pana in prezent, 77 de partide oficiale si 3 goluri pentru echipa alaturi de care a cucerit titlul in 2017. A evoluat la toate categoriile de varsta la echipele nationale, iar in noiembrie 2016 a debutat pentru Romania, intr-o partida amicala impotriva Rusiei.</p>
+		      </div>
+
+            <div class="link-box">
+		         <a class="popup-modal-dismiss">Close</a>
+            </div>
+
+	      </div><!-- modal-02 End -->
+
+         <div id="modal-03" class="popup-modal mfp-hide">
+
+		      <img class="scale-with-grid" src="images/portfolio/modals/m-judah.jpg" alt="" />
+
+		      <div class="description-box">
+			      <h4>10</h4>
+			      <p>Florin Tanase este un atacant nascut pe 21 decembrie 1994, la Gaesti. A inceput fotbalul la LPS Viitorul Pitesti, de unde a fost transferat, in 2010, la Academia Gheorghe Hagi. A ajuns in lotul primei echipe in vara lui 2013, dar a fost imprumutat, in acel sezon, pentru sase luni, la FC Voluntari. Odata cu revenirea la echipa lui Gheorghe Hagi, a inceput sa joace constant, adunand, pana in prezent, 86 de partide, 24 de goluri si 14 pase de gol in Liga 1, Cupa Romaniei, Cupa Ligii si preliminariile UEFA Europa League. De asemenea, a strans 3 partide in tricoul echipei nationale.
+</p>
+		      </div>
+
+            <div class="link-box">
+
+		         <a class="popup-modal-dismiss">Close</a>
+            </div>
+
+	      </div><!-- modal-03 End -->
+
+         <div id="modal-04" class="popup-modal mfp-hide">
+
+		      <img class="scale-with-grid" src="images/portfolio/modals/m-intothelight.jpg" alt="" />
+
+		      <div class="description-box">
+			      <h4>9</h4>
+			      <p>Harlem-Eddy Gnohere este un atacant francez, nascut pe 21 februarie 1988, la Paris. Acesta a inceput fotbalul ca junior la AS Cannes si Troyes AC, iar in sezonul 2007/2008 a fost cedat in Elvetia, la FC La Tour. Dupa trei sezoane in Elvetia, acolo unde a mai evoluat pentru FC Bulle si FC UGS Geneva, a ajuns in Belgia, la Excelsior Virton, fiind transferat, dupa inca un sezon, la Charleroi, echipa pentru care a evoluat timp de un an si jumatate. Incepand cu ianuarie 2013, a fost imprumutat cate sase luni la KVC Westerlo si Royal Excel Mouscron, iar in vara lui 2014 a fost achizitionat de catre RAEC Mons. Dupa un sezon in tricoul ultimei echipe, cel supranumit "Bizonul" a semnat, in iulie 2015, un contract pe doi ani cu Dinamo, echipa pentru care a evoluat in 59 de partide oficiale, a inscris 24 de goluri si a oferit 8 pase de gol. Pe 6 ianuarie 2017 a semnat un contract valabil pe doi ani si jumatate cu Steaua, devenind al zecelea jucator transferat direct de la marea rivala in istoria celor doua cluburi.</p>
+		      </div>
+
+            <div class="link-box">
+		         <a class="popup-modal-dismiss">Close</a>
+            </div>
+
+	      </div><!-- modal-04 End -->
+
+         <div id="modal-05" class="popup-modal mfp-hide">
+
+		      <img class="scale-with-grid" src="images/portfolio/modals/m-farmerboy.jpg" alt="" />
+
+		      <div class="description-box">
+			      <h4>7</h4>
+			      <p>Florinel Teodor Coman este un atacant nascut pe 10 aprilie 1998, la Braila. A inceput fotbalul la Luceafarul Braila, fiind transferat, la varsta de 13 ani, de Academia de Fotbal Gheorghe Hagi. La inceputul lui 2016 a facut pasul catre echipa de seniori FC Viitorul, pentru care a evoluat in 46 de partide, a inscris 6 goluri si a oferit 8 pase de gol, trecandu-si in palmares titlul de campion in sezonul 2016-2017.</p>
+		      </div>
+
+            <div class="link-box">
+		         <a class="popup-modal-dismiss">Close</a>
+            </div>
+
+	      </div><!-- modal-05 End -->
+
+         <div id="modal-06" class="popup-modal mfp-hide">
+
+		      <img class="scale-with-grid" src="images/portfolio/modals/m-girl.jpg" alt="" />
+
+		      <div class="description-box">
+			      <h4>8</h4>
+			      <p>Lucian Ionut Filip s-a nascut pe 25 septembrie 1990, la Craiova si a sosit la Steaua in 2007, de la Scoala de Fotbal "Gica Popescu". A evoluat in mai multe partide pentru echipa a doua a clubului si a facut, in paralel, antrenamente cu prima echipa a Stelei pana in 2010, cand a fost imprumutat la Unirea Urziceni. In sezonul 2011-2012 a evoluat pentru FC Snagov si Concordia Chiajna, sub comanda lui Laurentiu Reghecampf, care l-a adus inapoi la Steaua in vara lui 2012. Lucian a castigat trei titluri de campion, Cupa Romaniei, Cupa Ligii si Super Cupa Romaniei si a reusit, impreuna cu Steaua, sa se califice in "optimile" UEFA Europa League si in grupele UEFA Champions League. Acesta a fost si ghinionist, avand parte, in sezonul trecut, de o accidentare grava la antrenament, in urma careia a suferit o fractura de peroneu care l-a tinut departe de teren timp de cinci luni.</p>
+		      </div>
+
+            <div class="link-box">
+		         <a class="popup-modal-dismiss">Close</a>
+            </div>
+
+	      </div><!-- modal-06 End -->
+
+         <div id="modal-07" class="popup-modal mfp-hide">
+
+		      <img class="scale-with-grid" src="images/portfolio/modals/m-origami.jpg" alt="" />
+
+		      <div class="description-box">
+			      <h4>11</h4>
+			      <p>Olimpiu Morutan este un mijlocas de mare perspectiva si unul dintre jucatorii de baza pentru lotul U19 al Romaniei. A fost transferat la FCSB in iarna lui 2018, de la FC Botosani, insa a ramas in Moldova pana la finalul sezonului, alaturandu-se lotului condus de Nicolae Dica in iunie 2018.</p>
+		      </div>
+
+            <div class="link-box">
+		         <a class="popup-modal-dismiss">Close</a>
+            </div>
+
+	      </div><!-- modal-07 End -->
+
+         <div id="modal-08" class="popup-modal mfp-hide">
+
+		      <img class="scale-with-grid" src="images/portfolio/modals/m-retrocam.jpg" alt="" />
+
+		      <div class="description-box">
+			      <h4>15</h4>
+			      <p>Marko Momcilovic este un fundas stanga sarb, nascut pe 11 iunie 1987 in Leskovac. Si-a inceput cariera la Radnicki Belgrad, iar inainte de a ajunge in Romania, a mai evoluat pentru Bobiste, Dubocica si Javor Ivanjica. La inceputul sezonului 2013-2014 a semnat cu Pandurii Targu-Jiu, echipa pentru care a evoluat, in doi ani si jumatate, in 108 partide din Liga 1, Cupa Ligii, Cupa Romaniei si UEFA Europa League, marcand de 10 ori si oferind 9 pase de gol. A semnat, pe 12 ianuarie 2016, un contract cu Steaua valabil pe trei ani.</p>
+		      </div>
+
+            <div class="link-box">
+		         <a class="popup-modal-dismiss">Close</a>
+            </div>
+
+	      </div><!-- modal-01 End -->
+		  
+		    <div id="modal-09" class="popup-modal mfp-hide">
+
+		      <img class="scale-with-grid" src="images/portfolio/modals/m-girl1.jpg" alt="" />
+
+		      <div class="description-box">
+			      <h4>21</h4>
+			      <p>Ioan Hora este un atacant nascut pe 21 august 1988, la Oradea. Acesta a evoluat, la nivel de profesionisti, pentru UTA Arad, Gloria Bistrita, CFR Cluj, ASA Targu Mures, Pandurii Targu-Jiu, Konyaspor, Akhisarspor si Elazigspor. La nivel de performante, se poate lauda cu trofeele de Campion al Romaniei (2012) si Super Cupa Romaniei (2011), cu CFR Cluj, Cupa Turciei cu Konyaspor (2017), respectiv Akhisarspor (2018). De asemenea, a devenit golgeterul Ligii 1 din Romania, cu 19 goluri, in sezonul 2015-2016, cand evolua pentru Pandurii Targu-Jiu. Are in CV si patru meciuri pentru echipa nationala a Romaniei.</p>
+		      </div>
+
+            <div class="link-box">
+		         <a class="popup-modal-dismiss">Close</a>
+            </div>
+
+	      </div><!-- modal-06 End -->
+		  
+		    <div id="modal-10" class="popup-modal mfp-hide">
+
+		      <img class="scale-with-grid" src="images/portfolio/modals/m-girl2.jpg" alt="" />
+
+		      <div class="description-box">
+			      <h4>16</h4>
+			      <p>Bogdan Planic este un fundas central sarb, nascut pe 19 ianuarie 1992, la Uzice. A inceput fotbalul la Sloboza Uzice, trecand, de-a lungul timpului, pe la FK Bezanija, Jedinstvo Uzice, OFK Belgrad, Steaua Rosie Belgrad si, din vara lui 2016, la FK Vojvodina Novi Sad. Pentru ultimul club, de la care a fost transferat la Steaua, a evoluat in 40 de partide si a inscris un gol in toate competitiile.</p>
+		      </div>
+
+            <div class="link-box">
+		         <a class="popup-modal-dismiss">Close</a>
+            </div>
+
+	      </div><!-- modal-06 End -->
+		  
+		    <div id="modal-11" class="popup-modal mfp-hide">
+
+		      <img class="scale-with-grid" src="images/portfolio/modals/m-girl3.jpg" alt="" />
+
+		      <div class="description-box">
+			      <h4>12</h4>
+			      <p>Razvan Ducan este un portar crescut de CS Petrolul Videle si transferat la Academia FCSB la inceputul anului 2018. Tanarul goalkeeper a fost inclus, incepand cu iunie 2018, in lotul primei echipe.</p>
+		      </div>
+
+            <div class="link-box">
+		         <a class="popup-modal-dismiss">Close</a>
+            </div>
+
+	      </div><!-- modal-06 End -->
+		  
+		    <div id="modal-12" class="popup-modal mfp-hide">
+
+		      <img class="scale-with-grid" src="images/portfolio/modals/m-girl4.jpg" alt="" />
+
+		      <div class="description-box">
+			      <h4>23</h4> 
+			      <p>Ovidiu Popescu este un fotbalist nascut pe 27 februarie 1994, la Resita. Acesta a debutat ca senior la UTA Arad, club pentru care a evoluat timp de un sezon, intre 2013 si 2014, in 25 de partide, inscriind 6 goluri. A trecut apoi la ACS Poli Timisoara, pentru care a jucat 49 de meciuri si a inscris 5 goluri. Evolutiile bune l-au adus in atentia Stelei, care l-a transferat la inceputul sezonului 2016-2017. De asemenea, Ovidiu este international de tineret.</p
+		      </div>
+
+            <div class="link-box">
+		         <a class="popup-modal-dismiss">Close</a>
+            </div>
+
+	      </div><!-- modal-06 End -->
+		  
+		    <div id="modal-13" class="popup-modal mfp-hide">
+
+		      <img class="scale-with-grid" src="images/portfolio/modals/m-girl5.jpg" alt="" />
+
+		      <div class="description-box">
+			      <h4>27</h4>
+			      <p>Adrian Stoian este un mijlocas nascut pe 11 februarie 1991, la Craiova. Acesta a inceput fotbalul la scoala de Fotbal Gheorghe Popescu, acolo unde a fost coleg cu Lucian Filip. In 2008 a fost transferat de AS Roma, pentru care a evoluat in 28 de meciuri la nivelul echipei Primavera si intr-o singura partida in Serie A. A fost imprumutat, intre 2010 si 2012, la Pescara si AS Bari, iar in vara lui 2012 a ajuns la Chievo Verona. Dupa un sezon petrecut la Verona, acesta a fost imprumutat, pe rand, la Genoa, Bari si Crotone, iar cu ultima echipa a semnat un contract definitiv in vara lui 2015. A adunat 95 de partide in Serie A si doua meciuri pentru echipa nationala a Romaniei</p>
+		      </div>
+
+            <div class="link-box">
+		         <a class="popup-modal-dismiss">Close</a>
+            </div>
+
+	      </div><!-- modal-06 End -->
+		  
+		    <div id="modal-14" class="popup-modal mfp-hide">
+
+		      <img class="scale-with-grid" src="images/portfolio/modals/m-girl6.jpg" alt="" />
+
+		      <div class="description-box">
+			      <h4>98</h4>
+			      <p>Dennis Man este un atacant nascut pe 26 august 1998, la Arad, care a inceput fotbalul la Atletico Arad. A fost transferat de UTA in vara lui 2014, evoluand pentru aradeni de 28 de ori si marcand 12 goluri in toate competitiile. In actuala stagiune de Liga 2, Dennis a inscris 5 goluri in primele 3 partide jucate.</p>
+		      </div>
+
+            <div class="link-box">
+		         <a class="popup-modal-dismiss">Close</a>
+            </div>
+
+	      </div><!-- modal-06 End -->
+		  
+		    <div id="modal-15" class="popup-modal mfp-hide">
+
+		      <img class="scale-with-grid" src="images/portfolio/modals/m-girl7.jpg" alt="" />
+
+		      <div class="description-box">
+			      <h4>28</h4>
+			      <p>Mihai Roman este un jucator nascut pe 16 octombrie 1984, la Suceava. Acesta a inceput fotbalul la echipa locala Cetatea Suceava, fiind transferat in 2007 de FC Brasov. Dupa trei ani la echipa de sub Tampa, a fost transferat de Rapid, pentru care a evoluat pana in 2013, cand a fost legitimat de FC Toulouse, din postura de jucator liber de contract. In iulie 2016 a semnat cu FC Botosani, pentru care a inscris 16 goluri in 70 de partide. La nivelul echipei nationale, Mihai a adunat 10 partide oficiale intre 2009 si 2012.</p>
+		      </div>
+
+            <div class="link-box">
+		         <a class="popup-modal-dismiss">Close</a>
+            </div>
+
+	      </div><!-- modal-06 End -->
+		  
+		  		    <div id="modal-16" class="popup-modal mfp-hide">
+
+		      <img class="scale-with-grid" src="images/portfolio/modals/m-girl8.jpg" alt="" />
+
+		      <div class="description-box">
+			      <h4>34</h4>
+			      <p>Cristian Balgradean este un portar nascut pe 21 martie 1988, la Sannicolau Mare. Acesta a inceput fotbalul la Atletico Arad, de unde a ajuns, de-a lungul timpului, la Minerul Lupeni, FC Brasov, Liberty Salonta, UTA Arad, Dinamo, Unirea Urziceni, CS Universitatea Craiova sau Concordia Chiajna. Are in palmares o Cupa a Romaniei si o Super Cupa a Romaniei, ambele obtinute in 2012, cu Dinamo. De asemenea, a strans doua prezente in echipa nationala, ambele in meciuri amicale din 2011, cu Grecia si Polonia.</p>
+		      </div>
+
+            <div class="link-box">
+		         <a class="popup-modal-dismiss">Close</a>
+            </div>
+
+	      </div><!-- modal-06 End -->
+		  
+		  		    <div id="modal-17" class="popup-modal mfp-hide">
+
+		      <img class="scale-with-grid" src="images/portfolio/modals/m-girl9.jpg" alt="" />
+
+		      <div class="description-box">
+			      <h4>70</h4>
+			      <p>Florentin Matei este un jucator nascut pe 15 aprilie 1993 la Bolintin-Vale si care a fost considerat unul dintre marile talente ale fotbalului romanesc. A facut junioratul la FCSB, pentru care a evoluat si in doua partide la echipa de seniori, la finalul sezonului 2009-2010. A fost imprumutat, in sezonul 2010-2011, la Unirea Urziceni, dupa care a fost declarat liber de contract. A mai trecut, in cariera, pe la Cesena, Volyn Lutsk, HNK Rijeka, Astra Giurgiu si Al Ittihad Kalba. Alaturi de Rijeka a devenit campionul Croatiei si castigatorul Cupei Croatiei.</p>
+		      </div>
+
+            <div class="link-box">
+		         <a class="popup-modal-dismiss">Close</a>
+            </div>
+
+	      </div><!-- modal-06 End -->
+		  
+		  		    <div id="modal-18" class="popup-modal mfp-hide">
+
+		      <img class="scale-with-grid" src="images/portfolio/modals/m-girl10.jpg" alt="" />
+
+		      <div class="description-box">
+			      <h4>77</h4>
+			      <p>Alexandru Stan este un jucator nascut pe 7 februarie 1989, in Bucuresti, care a inceput fotbalul la Progresul Bucuresti. A mai trecut, pe parcursul anilor, pe la ACS Berceni, Concordia Chiajna si Astra Giurgiu (la Astra de doua ori: 2009-2012 si 2015-2018). Alaturi de giurgiuveni, Stan a castigat titlul de campion in 2016 si a adunat 13 partide si un gol in cupele europene.</p>
+		      </div>
+
+            <div class="link-box">
+		         <a class="popup-modal-dismiss">Close</a>
+            </div>
+
+	      </div><!-- modal-06 End -->
+		  
+		  		    <div id="modal-19" class="popup-modal mfp-hide">
+
+		      <img class="scale-with-grid" src="images/portfolio/modals/m-girl11.jpg" alt="" />
+
+		      <div class="description-box">
+			      <h4>80</h4>
+			      <p>Filipe de Andrade Teixeira este un mijlocas portughez nascut pe 2 octombrie 1980, in Capitala Frantei. Acesta a inceput fotbalul profesionist la Felgueiras, club pentru care a evoluat, la nivel de seniori, intre 1998 si 2001, cand a semnat cu francezii de la FC Istres. Dupa un an la Istres, a fost transferat de Paris Saint Germain, club pentru care a evoluat doar in sezonul 2002-2003, fiind imprumutat, in urmatoarea stagiune, la Uniao Leiria. In 2005, a ajuns la Academica de Coimbra, club care l-a vandut, in 2007, englezilor de la West Bromwich Albion, pentru care a evoluat pana la inceputul lui 2010, cand a fost imprumutat la Barnsley FC. In iulie 2010 a semnat cu Metalurg Donetsk, din Ucraina, din postura de jucator liber, iar in iarna lui 2011 a facut pentru prima data cunostinta cu Romania, fiind imprumutat la FC Brasov. In vara aceluiasi an, a ajuns la Rapid, pentru care a jucat timp de un an si jumatate, iar in ianuarie 2013 a ajuns in Emiratele Arabe Unite, la Al-Shaab, pentru care a evoluat doar cateva luni. A urmat un contract de doi ani cu Petrolul Ploiesti, intre 2013 si 2015, iar in iulie 2015 a ajuns la Astra Giurgiu, club alaturi de care a castigat titlul de campion in 2016. De asemenea, mai are in palmares Cupa Frantei, castigata alaturi de Paris Saint Germain in 2004.</p>
+		      </div>
+
+            <div class="link-box">
+		         <a class="popup-modal-dismiss">Close</a>
+            </div>
+
+	      </div><!-- modal-06 End -->
+		  
+		  		    <div id="modal-20" class="popup-modal mfp-hide">
+
+		      <img class="scale-with-grid" src="images/portfolio/modals/m-girl12.jpg" alt="" />
+
+		      <div class="description-box">
+			      <h4>24</h4>
+			      <p>Raul Rusescu s-a transferat la FCSB in vara anului 2011, de la Unirea Urziceni, echipa cu care devenise campion al Romaniei in 2009, iar principalul sau obiectiv a fost acela de a cuceri titlul 24 cu Steaua si de a deveni golgeterul echipei. Dupa ce in primul sezon a reusit sa inscrie de 13 ori in campionat (31 de partide) si de 2 ori in UEFA Europa League (9 partide), "Ruse" explodat in sezonul 2012-2013, reusind sa marcheze de 21 de ori in campionat (34 de partide) si de 5 ori in UEFA Europa League (13 partide). Astfel, bilantul lui Raul la FCSB a fost de 65 de meciuri si 34 de goluri in Liga 1, respectiv 21 de meciuri si 7 goluri in UEFA Europa League, cifre care l-au introdus pentru totdeauna in istoria de aur a clubului nostru. Titlul de golgeter al Ligii 1 si castigarea campionatului in sezonul 2012-2013 au reprezentat incununarea muncii extraordinare depuse de atacantul originar din Ramnicu Valcea. "Jucatorul Anului 2012" s-a transferat, in vara lui 2013, la FC Sevilla, iar in sezonul 2014-2015 a revenit la echipa noastra, sub forma de imprumut, a marcat 13 goluri in 33 de partide si a castigat toate cele trei trofee puse in joc: titlul de Campion, Cupa Romaniei si Cupa Ligii! In vara lui 2015 a fost legitimat de Osmanlispor, din Superliga Turciei, echipa la care a ramas pana in august 2018, cand a revenit la FCSB!</p>
+		      </div>
+
+            <div class="link-box">
+		         <a class="popup-modal-dismiss">Close</a>
+            </div>
+
+	      </div><!-- modal-06 End -->
+
+
+      </div> <!-- row End -->
+
+   </section> <!-- Portfolio Section End-->
+
+
+   <!-- Call-To-Action Section
+   ================================================== -->
+   <section id="call-to-action">
+
+      <div class="row">
+
+         <div class="two columns header-col">
+<img src="http://www.steauafc.com/img/fcsb_big.png">
+
+         </div>
+
+         <div class="seven columns">
+
+            <h2><span class="lead">Istoric</span></h2>
+            <p><span class="lead">Aventura roș-albaștrilor în fotbalul românesc începe, în negura timpului, la 7 iunie 1947, imediat după ce Generalul Mihai Lascăr și-a pus semnătura pe Ordinul de înființare a Asociației Sportive Centrale a Armatei (ASCA).</span></p>
+            <a href="istoric.html">Vezi mai mult...</a>
+
+         </div>
+
+         <div class="three columns action">
+
+
+
+         </div>
+
+      </div>
+
+   </section> <!-- Call-To-Action Section End-->
+
+
+   <!-- Testimonials Section
+   ================================================== -->
+   <section id="testimonials">
+
+      <div class="text-container">
+
+         <div class="row">
+
+            <div class="two columns header-col">
+
+               <h1><span>Client Testimonials</span></h1>
+
+            </div>
+
+            <div class="ten columns flex-container">
+
+               <div class="flexslider">
+
+                  <ul class="slides">
+
+                     <li>
+                        <blockquote>
+                           <p>"Dacă acest secol poate fi numit secolul omului obișnuit, atunci fotbalul, din toate sporturile, este în mod sigur jocul acestui secol.Într-o lume bântuită de bombele cu hidrogen și napalm, terenul de fotbal este un loc în care sănătatea și speranța sunt încă întregi." 
+                           </p>
+                           <cite>Stanley Rous</cite>
+                        </blockquote>
+                     </li> <!-- slide ends -->
+
+                     <li>
+                        <blockquote>
+                           <p>Ai n-ai mingea dai la poarta.
+                           </p>
+                           <cite>Gheorghe Hagi</cite>
+                        </blockquote>
+                     </li> <!-- slide ends -->
+					 
+					 <li>
+                        <blockquote>
+                           <p>Există un singur balon, deci trebuie să-l ai.
+                           </p>
+                           <cite>Johan Cruyff</cite>
+                        </blockquote>
+                     </li> <!-- slide ends -->
+					 
+					 <li>
+                        <blockquote>
+                           <p>Fotbalul este un joc bazat pe greșeli. Cine face mai puține greșeli, câștigă.
+                           </p>
+                           <cite>Johan Cruyff</cite>
+                        </blockquote>
+                     </li> <!-- slide ends -->
+
+                  </ul>
+
+               </div> <!-- div.flexslider ends -->
+
+            </div> <!-- div.flex-container ends -->
+
+         </div> <!-- row ends -->
+
+       </div>  <!-- text-container ends -->
+
+   </section> <!-- Testimonials Section End-->
+
+
+   <!-- Contact Section
+   ================================================== -->
+   <section id="contact">
+
+         <div class="row section-head">
+
+            <div class="two columns header-col">
+
+               <h1><span>Get In Touch.</span></h1>
+
+            </div>
+
+            <div class="ten columns">
+
+                  <p class="lead"> Contact
+                  </p>
+
+            </div>
+
+         </div>
+
+         <div class="row">
+
+            <div class="eight columns">
+
+               <!-- form -->
+               <form action="" method="post" id="contactForm" name="contactForm">
+					<fieldset>
+
+                  <div>
+						   <label for="contactName">Nume <span class="required">*</span></label>
+						   <input type="text" value="" size="35" id="contactName" name="contactName">
+                  </div>
+
+                  <div>
+						   <label for="contactEmail">E-mail <span class="required">*</span></label>
+						   <input type="text" value="" size="35" id="contactEmail" name="contactEmail">
+                  </div>
+
+                  <div>
+						   <label for="contactSubject">Titlu</label>
+						   <input type="text" value="" size="35" id="contactSubject" name="contactSubject">
+                  </div>
+
+                  <div>
+                     <label for="contactMessage">Mesaj <span class="required">*</span></label>
+                     <textarea cols="50" rows="15" id="contactMessage" name="contactMessage"></textarea>
+                  </div>
+
+                  <div>
+                     <button class="submit">Trimite</button>
+                     <span id="image-loader">
+                        <img alt="" src="images/loader.gif">
+                     </span>
+                  </div>
+
+					</fieldset>
+				   </form> <!-- Form End -->
+
+               <!-- contact-warning -->
+               <div id="message-warning"> Error boy</div>
+               <!-- contact-success -->
+				   <div id="message-success">
+                  <i class="fa fa-check"></i>Your message was sent, thank you!<br>
+				   </div>
+
+            </div>
+
+
+            <aside class="four columns footer-widgets">
+
+               <div class="widget widget_contact">
+
+					   <h4>Adresa</h4>
+					   <p class="address">
+						   Arena Nationala<br>
+						   Bulevardul Basarabia 37-39, București <br>
+						   <span>0735 651 247</span>
+						   <h1> E-mail </h1>
+						   <p> cristid9997@gmail.com </p>
+					   </p>
+               
+	
+			   
+	
+				   </div>
+
+               <div class="widget widget_tweets">
+
+                  <h4 class="widget-title">Tweat-uri</h4>
+
+                  <ul id="twitter">
+                     <li>
+                        <span>
+                        Aceasta este echipa de start a FCSB în Derby, care va începe la 20:30, în direct la Digi Sport, Telekom Sport și LookPlus & LookSport. @ Arena Națională
+                        </span>
+                        <b><a href="https://twitter.com/fcsbofficial_ro/status/1180515677922160640">1 Day Ago</a></b>
+                     </li>
+                     <li>
+                        <span>
+                       Roș-albaștrii au ajuns la stadion! Să fie Derby! @ Arena Națională 
+                        </span>
+                        <b><a href="https://twitter.com/fcsbofficial_ro/status/1180511931670634496">2 Days Ago</a></b>
+                     </li>
+                  </ul>
+<img src="https://www.fcsb.ro/img/fcsb-home-trophy-list.svg" alt="">
+		         </div>
+
+            </aside>
+
+      </div>
+
+   </section> <!-- Contact Section End-->
+
+
+   <!-- footer
+   ================================================== -->
+   <footer>
+
+      <div class="row">
+
+         <div class="twelve columns">
+<img src="https://www.fcsb.ro/img/fcsb-logo-footer.svg" alt="FCSB">
+
+            <ul class="social-links">
+               <li><a href="https://www.facebook.com/FCSBOfficial/"><i class="fa fa-facebook"></i></a></li>
+               <li><a href="https://twitter.com/fcsbofficial_ro"><i class="fa fa-twitter"></i></a></li>
+               <li><a href="https://www.instagram.com/fcsbofficial/"><i class="fa fa-instagram"></i></a></li>
+            </ul>
+            <ul class="copyright">
+               <li >FCSB Official</li>
+               <li>Design creat de Dumitru Andrei Cristian</a></li>   
+            </ul>
+         </div>
+
+         <div id="go-top"><a class="smoothscroll" title="Back to Top" href="#home"><i class="icon-up-open"></i></a></div>
+
+      </div>
+	  
+	  <script>
+function startTime() {
+  var today = new Date();
+  var h = today.getHours();
+  var m = today.getMinutes();
+  var s = today.getSeconds();
+  m = checkTime(m);
+  s = checkTime(s);
+  document.getElementById('txt').innerHTML =
+  h + ":" + m + ":" + s;
+  var t = setTimeout(startTime, 500);
+}
+function checkTime(i) {
+  if (i < 10) {i = "0" + i};  // add zero in front of numbers < 10
+  return i;
+}
+</script>
+<body onload="startTime()">
+
+<div id="txt"></div>
+
+
+<audio src="imn.mp3" controls autoplay>
+</audio>
+
+
+
+   </footer> <!-- Footer End-->
+
+   <!-- Java Script
+   ================================================== -->
+   <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+   <script>window.jQuery || document.write('<script src="js/jquery-1.10.2.min.js"><\/script>')</script>
+   <script type="text/javascript" src="js/jquery-migrate-1.2.1.min.js"></script>
+
+   <script src="js/jquery.flexslider.js"></script>
+   <script src="js/waypoints.js"></script>
+   <script src="js/jquery.fittext.js"></script>
+   <script src="js/magnific-popup.js"></script>
+   <script src="js/init.js"></script>
+
+</body>
+
+</html>

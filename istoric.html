@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<!--[if lt IE 8 ]><html class="no-js ie ie7" lang="en"> <![endif]-->
+<!--[if IE 8 ]><html class="no-js ie ie8" lang="en"> <![endif]-->
+<!--[if (gte IE 8)|!(IE)]><!--><html class="no-js" lang="en"> <!--<![endif]-->
+<head>
+
+   <!--- Basic Page Needs
+   ================================================== -->
+   <meta charset="utf-8">
+	<title>FCSB</title>
+	<meta name="description" content="">
+	<meta name="author" content="">
+
+   <!-- Mobile Specific Metas
+   ================================================== -->
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+	<!-- CSS
+    ================================================== -->
+   <link rel="stylesheet" href="css/default.css">
+	<link rel="stylesheet" href="css/layout.css">
+   <link rel="stylesheet" href="css/media-queries.css">
+   <link rel="stylesheet" href="css/magnific-popup.css">
+
+   <!-- Script
+   ================================================== -->
+	<script src="js/modernizr.js"></script>
+
+   <!-- Favicons
+	================================================== -->
+	<link rel="shortcut icon" href="images/logo.png" >
+
+</head>
+
+<body>
+
+<style>
+  #snowflakeContainer {
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    display: none;
+  }
+
+  .snowflake {
+    position: fixed;
+    background-color: #CCC;
+    user-select: none;
+    z-index: 1000;
+    pointer-events: none;
+    border-radius: 50%;
+    width: 10px;
+    height: 10px;
+  }
+</style>
+
+<div id="snowflakeContainer">
+  <span class="snowflake"></span>
+</div>
+
+<script>
+
+  var snowflakes = [];
+
+
+  var browserWidth;
+  var browserHeight;
+
+
+  var numberOfSnowflakes = 50;
+
+
+  var resetPosition = false;
+
+  // Handle accessibility
+  var enableAnimations = false;
+  var reduceMotionQuery = matchMedia("(prefers-reduced-motion)");
+
+
+  function setAccessibilityState() {
+    if (reduceMotionQuery.matches) {
+      enableAnimations = false;
+    } else { 
+      enableAnimations = true;
+    }
+  }
+  setAccessibilityState();
+
+  reduceMotionQuery.addListener(setAccessibilityState);
+
+  function setup() {
+    if (enableAnimations) {
+      window.addEventListener("DOMContentLoaded", generateSnowflakes, false);
+      window.addEventListener("resize", setResetFlag, false);
+    }
+  }
+  setup();
+
+ 
+  function Snowflake(element, speed, xPos, yPos) {
+    // set initial snowflake properties
+    this.element = element;
+    this.speed = speed;
+    this.xPos = xPos;
+    this.yPos = yPos;
+    this.scale = 1;
+
+    // declare variables used for snowflake's motion
+    this.counter = 0;
+    this.sign = Math.random() < 0.5 ? 1 : -1;
+
+    // setting an initial opacity and size for our snowflake
+    this.element.style.opacity = (.1 + Math.random()) / 3;
+  }
+
+  //
+  // The function responsible for actually moving our snowflake
+  //
+  Snowflake.prototype.update = function () {
+    // using some trigonometry to determine our x and y position
+    this.counter += this.speed / 5000;
+    this.xPos += this.sign * this.speed * Math.cos(this.counter) / 40;
+    this.yPos += Math.sin(this.counter) / 40 + this.speed / 30;
+    this.scale = .5 + Math.abs(10 * Math.cos(this.counter) / 20);
+
+    // setting our snowflake's position
+    setTransform(Math.round(this.xPos), Math.round(this.yPos), this.scale, this.element);
+
+    // if snowflake goes below the browser window, move it back to the top
+    if (this.yPos > browserHeight) {
+      this.yPos = -50;
+    }
+  }
+
+  //
+  // A performant way to set your snowflake's position and size
+  //
+  function setTransform(xPos, yPos, scale, el) {
+    el.style.transform = `translate3d(${xPos}px, ${yPos}px, 0) scale(${scale}, ${scale})`;
+  }
+
+  //
+  // The function responsible for creating the snowflake
+  //
+  function generateSnowflakes() {
+
+    // get our snowflake element from the DOM and store it
+    var originalSnowflake = document.querySelector(".snowflake");
+
+    // access our snowflake element's parent container
+    var snowflakeContainer = originalSnowflake.parentNode;
+    snowflakeContainer.style.display = "block";
+
+    // get our browser's size
+    browserWidth = document.documentElement.clientWidth;
+    browserHeight = document.documentElement.clientHeight;
+
+    // create each individual snowflake
+    for (var i = 0; i < numberOfSnowflakes; i++) {
+
+      // clone our original snowflake and add it to snowflakeContainer
+      var snowflakeClone = originalSnowflake.cloneNode(true);
+      snowflakeContainer.appendChild(snowflakeClone);
+
+      // set our snowflake's initial position and related properties
+      var initialXPos = getPosition(50, browserWidth);
+      var initialYPos = getPosition(50, browserHeight);
+      var speed = 5 + Math.random() * 40;
+
+      // create our Snowflake object
+      var snowflakeObject = new Snowflake(snowflakeClone,
+        speed,
+        initialXPos,
+        initialYPos);
+      snowflakes.push(snowflakeObject);
+    }
+
+    // remove the original snowflake because we no longer need it visible
+    snowflakeContainer.removeChild(originalSnowflake);
+
+    moveSnowflakes();
+  }
+
+  //
+  // Responsible for moving each snowflake by calling its update function
+  //
+  function moveSnowflakes() {
+
+    if (enableAnimations) {
+      for (var i = 0; i < snowflakes.length; i++) {
+        var snowflake = snowflakes[i];
+        snowflake.update();
+      }      
+    }
+
+    // Reset the position of all the snowflakes to a new value
+    if (resetPosition) {
+      browserWidth = document.documentElement.clientWidth;
+      browserHeight = document.documentElement.clientHeight;
+
+      for (var i = 0; i < snowflakes.length; i++) {
+        var snowflake = snowflakes[i];
+
+        snowflake.xPos = getPosition(50, browserWidth);
+        snowflake.yPos = getPosition(50, browserHeight);
+      }
+
+      resetPosition = false;
+    }
+
+    requestAnimationFrame(moveSnowflakes);
+  }
+
+  //
+  // This function returns a number between (maximum - offset) and (maximum + offset)
+  //
+  function getPosition(offset, size) {
+    return Math.round(-1 * offset + Math.random() * (size + 2 * offset));
+  }
+
+  //
+  // Trigger a reset of all the snowflakes' positions
+  //
+  function setResetFlag(e) {
+    resetPosition = true;
+  }
+</script>
+   <!-- Header
+   ================================================== -->
+   <header id="home">
+
+      <nav id="nav-wrap">Design creat de Dumitru Andrei Cristian
+
+         <a class="mobile-btn" href="#nav-wrap" title="Show navigation">Show navigation</a>
+	      <a class="mobile-btn" href="#" title="Hide navigation">Hide navigation</a>
+
+         <ul id="nav" class="nav">
+            <li class="current"><a class="smoothscroll" href="index.html#home">Inceput</a></li>
+	         <li><a class="smoothscroll" href="index.html#resume">Clasament</a></li>
+            <li><a class="smoothscroll" href="index.html#portfolio">Lot</a></li>
+		    <li><a class="smoothscroll" href="index.html#call-to-action">Istoric</a></li>
+            <li><a class="smoothscroll" href="index.html#testimonials">Motivatie</a></li>
+            <li><a class="smoothscroll" href="index.html#contact">Contactati-ne</a></li>
+         </ul> <!-- end #nav -->
+
+      </nav> <!-- end #nav-wrap -->
+
+      <div class="row banner">
+         <div class="banner-text">
+            <hr />
+         </div>
+      </div>
+
+      <p class="scrolldown">
+         <a class="smoothscroll" href="#istoric"><i class="icon-down-circle"></i></a>
+      </p>
+
+   </header> <!-- Header End -->
+
+   
+      <section id="istoric">
+      <div class="row">
+         <div class="two columns header-col">
+		 
+         </div>
+
+         <div class="seven columns">
+<img alt="" src="ASA.png">
+          <h1>Povestea clubului nostru</h1>
+		  <div class="text-content wysiwyg">
+						<p></p><h1> INTRODUCERE </h1>Aventura roș-albaștrilor în fotbalul românesc începe, în negura timpului, la 7 iunie 1947, imediat după ce Generalul Mihai Lascăr și-a pus semnătura pe Ordinul de înființare a Asociației Sportive Centrale a Armatei (ASCA).<br><br>Chiar dacă unii prezintă tedențios începuturile echipei, prin performanțele care au urmat, s-a demonstrat că cei care au pus umărul la crearea acestei entități nu s-au înșelat. <br><br>
+						<img alt="" src="CCA.png">
+						<p></p><h1> 1947 - 1959 </h1>Toată lumea știe că orice început este greu. Ca atare, nici al echipei noastre nu putea fi altfel. Primul meci în Divizia A al ASA-ului s-a disputat, “pe teren propriu”, contra celor de la Dermata Cluj, în care antrenorul Coloman Braun-Bogdan a aliniat următoarea formulă: Lăzăreanu – Cernea, Jivan, Taborsky – Mark, Nanciu – Tălmaciu, Bernhardt, Marinescu, Popescu. Disputată pe stadionul Venus, partida s-a încheiat la egalitate, 0-0, la fel cum s-a încheiat şi următorul “match”, cu Ciocanul Bucureşti. <br><br>
+						<img alt="" src="CS.png">
+						<p></p><h1> 1960 - 1969 </h1>Anii ’60 debutează cu un un amical de lux, împotriva celor de la Inter Milano. CCA-ul lui Gheorghe Popescu s-a impus cu 2-0, grație golurilor lui Alecsandrescu si Crișan. Un nou titlu de campioană. Față de precedentele ediții, cea din 1959-60 a fost câștigată într-o manieră categorică, cu șapte puncte avans față de ocupanta locului doi, Steagul Roșu Brașov, și la 13 față de Dinamo. În acel an, campioana României a dat și golgeterul: Gheorghe Constantin, cu 20 de goluri.  <br><br>
+						<img alt="" src="ST.png">
+						<p></p><h1> 1970 - 1979 </h1>Deceniul a început promițător, cu două Cupe ale României consecutive, în fața rivalilor de la Dinamo. În finala din ‘70, în fața a 30.000 de spectatori, Voinea și-a răpus rivala printr-o dublă, în minutele 7 și 56, iar în cea din ’71, călăul lui Dinamo s-a numit Tătaru, care a marcat cele trei goluri ale Stelei. Anul 1971 s-a încheiat cu eliminarea Barcelonei în turul al doilea al Cupei Cupelor, după două victorii (1-0 pe Nou Camp și 2-1 pe 23 August), toate golurile militarilor fiind semnate de Viorel Năstase. În turul următor, Steaua era eliminată, fără înfrângere (1-1 şi 0-0), de un alt nume mare: Bayernul lui Franz Beckenbauer. <br><br>
+						<p></p><h1> 1980 - 1989 </h1>După două decenii în care nu a rupt gura târgului, apar semnele că avea să se nască o echipă de aur. Sătul de succese sporadice, comandantul clubului Ion Aurel decide să-l aducă în club pe fostul golgeter din perioada de glorie a CCA-ului, Ion Alecsandrescu. Din 1962, după retragere, Alecsandrescu a ocupat funcţia de secretar general al Federaţiei Române de Fotbal şi a acceptat să devină vicepreşedintele secţiei de fotbal, în 1981. <br><br>
+						<img alt="" src="CSA.png">
+						<p></p><h1> 1990 - 1999 </h1>Pe 9 septembrie 1989, Dinamo a învins Steaua, chiar în Ghencea, cu un necruțător 3-0 și a pus capăt seriei de invincibilitate de 104 în campionat, ceea ce reprezintă și astăzi un record la nivelul fotbalului european. Avea să fie înfrângerea care aducea cu sine și pierderea campionatului în favoarea rivalilor. Schimbările din viața politică au făcut ca șirul succeselor în campionat să fie întrerupt, însă fără vreo legătură. <br><br>
+						<img alt="" src="FCS.png">
+						<p></p><h1> 2000 - 2009 </h1>Performanțele obținute în deceniul precedent au apăsat greu pe umerii următorilor antrenori. Era greu să ajungi la asemenea cifre. Structura campionatului avea să cunoască modificări: numărul echipelor din prima divizie s-a modificat pentru prima oară după 27 ani și a ajuns la 16. Cu Victor Pițurcă pe bancă, Steaua s-a impus în campionat, cu un cuplu de atac letal: Vlădoiu-Dănciulescu. <br><br>
+						<img alt="" src="FCSB.png">
+						<p></p><h1> 2010 - 2019 </h1> 2010 ... Câteva eșecuri greu de digerat au făcut ca Laurențiu Reghecampf să ajungă pe banca tehnică a roș-albaștrilor. Și Steaua a defilat în campionat ca în vremurile bune, pe care l-a câștigat cu un avans de 16 puncte. În UEFA Europa League, noua denumire a Cupei UEFA, Steaua s-a calificat din nou în primăvara europeană, unde a dat piept cu un nume mare al fotbalului european: Ajax Amsterdam. <br><br>					</div>
+         </div>
+
+         <div class="three columns action">
+
+
+
+         </div>
+
+      </div>
+
+   </section> <!-- Call-To-Action Section End-->
+   
+      <!-- About Section
+   ================================================== -->
+   <section id="contact">
+
+      <div class="row">
+
+         <div class="three columns">
+
+           <div class="page-header-motto">
+<img src="http://www.steauafc.com/img/fcsb_big.png">
+          			</div>
+
+         </div>
+         <div class="nine columns main-col">
+                             <img src="https://www.fcsb.ro/img/uefa.png" alt="">
+        <blockquote class="trophy">
+                  <font color="white ">1 TROFEU: </font>
+				  <font color="white ">UEFA CHAMPIONS LEAGUE</font>
+				  <font color="white ">1985-1986</font>
+
+							</blockquote>
+                             <img src="https://www.fcsb.ro/img/supercupa-europei.png" alt="" align="">
+			
+		<blockquote class="trophy">
+		                  <font color="white ">1 TROFEU: </font>
+						  				  <font color="white ">SUPERCUPA EUROPEI</font>
+										  <font color="white ">1986-1987</font>
+							</blockquote>
+							
+								
+								<img src="https://www.fcsb.ro/img/supercupa-romaniei.png" alt="">
+								
+								<blockquote class="trophy">
+								<font color="white ">6 TROFEE: </font>
+								<font color="white ">SUPERCUPA ROMANIEI </font>
+								<font color="white ">2012-2013, 2005-2006, 2000-2001, 1997-1998, 1994-1995, 1993-1994</font>
+
+							</blockquote>
+							
+								
+								
+               </div>
+
+            </div> <!-- end row -->
+
+         </div> <!-- end .main-col -->
+
+      </div>
+
+   </section> <!-- About Section End-->
+   
+      <footer>
+
+      <div class="row">
+
+         <div class="twelve columns">
+<img src="https://www.fcsb.ro/img/fcsb-logo-footer.svg" alt="FCSB">
+            <ul class="social-links">
+               <li><a href="https://www.facebook.com/FCSBOfficial/"><i class="fa fa-facebook"></i></a></li>
+               <li><a href="https://twitter.com/fcsbofficial_ro"><i class="fa fa-twitter"></i></a></li>
+               <li><a href="https://www.instagram.com/fcsbofficial/"><i class="fa fa-instagram"></i></a></li>
+            </ul>
+
+            <ul class="copyright">
+               <li >FCSB Official</li>
+               <li>Design creat de Dumitru Andrei Cristian</a></li>   
+            </ul>
+
+         </div>
+
+         <div id="go-top"><a class="smoothscroll" title="Back to Top" href="#home"><i class="icon-up-open"></i></a></div>
+
+      </div>
+
+	  <script>
+function startTime() {
+  var today = new Date();
+  var h = today.getHours();
+  var m = today.getMinutes();
+  var s = today.getSeconds();
+  m = checkTime(m);
+  s = checkTime(s);
+  document.getElementById('txt').innerHTML =
+  h + ":" + m + ":" + s;
+  var t = setTimeout(startTime, 500);
+}
+function checkTime(i) {
+  if (i < 10) {i = "0" + i};  // add zero in front of numbers < 10
+  return i;
+}
+</script>
+<body onload="startTime()">
+
+<div id="txt"></div>
+
+<audio src="imn.mp3" controls autoplay>
+</audio>
+	  
+	  
+   </footer> <!-- Footer End-->
+   </html>
